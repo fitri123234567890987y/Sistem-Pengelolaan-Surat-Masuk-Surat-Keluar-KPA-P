@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Surat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+</head>
+<body class="p-6 bg-gray-50">
+    <!-- Header -->
+    <header class="mb-8">
+        <h1 class="text-4xl font-extrabold text-center text-blue-700">
+            📩 Manajemen Surat Elektronik
+        </h1>
+        <p class="text-center text-gray-600 mt-2">
+            Sistem pengelolaan surat masuk dan keluar KPA-P
+        </p>
+    </header>
+
+    <!-- Form Section -->
+    <div id="form-section" class="bg-white p-8 rounded-lg shadow-lg max-w-2xl mx-auto border border-gray-300">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4 text-center">Tambah Surat</h2>
+        <p class="text-gray-500 mb-6 text-center">Isi detail surat di bawah ini</p>
+
+        <div class="grid grid-cols-3 gap-4 mb-6">
+            <input id="nomor" placeholder="Nomor Surat" class="border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-700" />
+            <input id="tanggal" type="date" class="border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-700" />
+            <input id="perihal" placeholder="Perihal Surat" class="border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-700" />
+        </div>
+
+        <div class="mb-6">
+            <label for="pdf" class="block mb-2 font-medium text-gray-600">Unggah File PDF Surat:</label>
+            <input id="pdf" type="file" accept=".pdf" class="border p-3 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 w-full bg-gray-50 text-gray-700" />
+        </div>
+
+        <div class="flex gap-4 justify-center">
+            <button id="submit-btn" onclick="addSurat('masuk')" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg shadow-md transform transition-transform hover:scale-105">
+                <i class="fas fa-inbox mr-2"></i> Tambah Surat Masuk
+            </button>
+            <button onclick="addSurat('keluar')" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg shadow-md transform transition-transform hover:scale-105">
+                <i class="fas fa-envelope mr-2"></i> Tambah Surat Keluar
+            </button>
+        </div>
+    </div>
+
+    <!-- Output Section -->
+    <div id="output-section" class="hidden mt-12 text-center">
+        <div class="mb-6 flex justify-center gap-4">
+            <button onclick="showTab('masuk')" class="font-bold text-white bg-green-500 px-6 py-2 rounded-lg shadow-md transform transition-transform hover:scale-105">
+                <i class="fas fa-inbox mr-2"></i> Surat Masuk
+            </button>
+            <button onclick="showTab('keluar')" class="font-bold text-white bg-blue-500 px-6 py-2 rounded-lg shadow-md transform transition-transform hover:scale-105">
+                <i class="fas fa-envelope mr-2"></i> Surat Keluar
+            </button>
+        </div>
+
+        <div id="masuk" class="hidden mt-6 w-full max-w-5xl mx-auto border border-gray-300 bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">📥 Surat Masuk</h2>
+            <table class="w-full border-collapse text-left table-auto">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-700">
+                        <th class="border p-3">Nomor</th>
+                        <th class="border p-3">Tanggal</th>
+                        <th class="border p-3">Perihal</th>
+                        <th class="border p-3 text-center">File</th>
+                        <th class="border p-3 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="keluar" class="hidden mt-6 w-full max-w-5xl mx-auto border border-gray-300 bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">📤 Surat Keluar</h2>
+            <table class="w-full border-collapse text-left table-auto">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-700">
+                        <th class="border p-3">Nomor</th>
+                        <th class="border p-3">Tanggal</th>
+                        <th class="border p-3">Perihal</th>
+                        <th class="border p-3 text-center">File</th>
+                        <th class="border p-3 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <button onclick="goBack()" class="mt-8 bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-lg shadow-md transform transition-transform hover:scale-105">
+            <i class="fas fa-arrow-left mr-2"></i> Kembali ke Menu Utama
+        </button>
+    </div>
+
+    <script>
+        let editMode = false;
+        let editIndex = null;
+        let editType = null;
+
+        function saveToLocalStorage(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        function getFromLocalStorage(key) {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function addSurat(type) {
+            const nomor = document.getElementById('nomor').value;
+            const tanggal = document.getElementById('tanggal').value;
+            const perihal = document.getElementById('perihal').value;
+            const pdfInput = document.getElementById('pdf');
+            
+            if (!nomor || !tanggal || !perihal || (!pdfInput.files.length && !editMode)) {
+                return alert('Lengkapi semua bidang dan unggah file PDF!');
+            }
+            
+            if (editMode) {
+                const data = getFromLocalStorage(editType);
+                const updatedPdf = pdfInput.files.length ? URL.createObjectURL(pdfInput.files[0]) : data[editIndex].pdfData;
+                data[editIndex] = { nomor, tanggal, perihal, pdfData: updatedPdf };
+                saveToLocalStorage(editType, data);
+                renderTable(editType);
+                resetForm();
+                alert('Data berhasil diperbarui!');
+            } else {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const pdfData = e.target.result;
+                    const surat = { nomor, tanggal, perihal, pdfData };
+                    const data = getFromLocalStorage(type);
+                    data.push(surat);
+                    saveToLocalStorage(type, data);
+                    renderTable(type);
+                };
+                reader.readAsDataURL(pdfInput.files[0]);
+            }
+        }
+
+        function renderTable(type) {
+            const data = getFromLocalStorage(type);
+            const table = document.getElementById(type).getElementsByTagName('tbody')[0];
+            table.innerHTML = '';
+            data.forEach((surat, index) => {
+                const newRow = table.insertRow();
+                newRow.innerHTML = `
+                    <td class='border p-3'>${surat.nomor}</td>
+                    <td class='border p-3'>${surat.tanggal.split('-').reverse().join('-')}</td>
+                    <td class='border p-3'>${surat.perihal}</td>
+                    <td class='border p-3 text-center'>
+                        <a href="${surat.pdfData}" target="_blank" class="text-blue-500 underline">Unduh PDF</a>
+                    </td>
+                    <td class='border p-3 text-center'>
+                        <button onclick='editRow("${type}", ${index})' class='text-yellow-500 mr-2'><i class='fas fa-edit'></i></button>
+                        <button onclick='deleteRow("${type}", ${index})' class='text-red-500'><i class='fas fa-trash'></i></button>
+                    </td>`;
+            });
+        }
+
+        function deleteRow(type, index) {
+            const data = getFromLocalStorage(type);
+            data.splice(index, 1);
+            saveToLocalStorage(type, data);
+            renderTable(type);
+        }
+
+        function editRow(type, index) {
+            const data = getFromLocalStorage(type);
+            const surat = data[index];
+            document.getElementById('nomor').value = surat.nomor;
+            document.getElementById('tanggal').value = surat.tanggal;
+            document.getElementById('perihal').value = surat.perihal;
+            editMode = true;
+            editIndex = index;
+            editType = type;
+            document.getElementById('submit-btn').innerHTML = 'Perbarui Surat';
+        }
+
+        function resetForm() {
+            document.getElementById('nomor').value = '';
+            document.getElementById('tanggal').value = '';
+            document.getElementById('perihal').value = '';
+            document.getElementById('pdf').value = '';
+            editMode = false;
+            editIndex = null;
+            editType = null;
+            document.getElementById('submit-btn').innerHTML = 'Tambah Surat Masuk';
+        }
+
+        function showTab(tab) {
+            document.getElementById('masuk').classList.add('hidden');
+            document.getElementById('keluar').classList.add('hidden');
+            document.getElementById(tab).classList.remove('hidden');
+            renderTable(tab);
+        }
+
+        function goBack() {
+            document.getElementById('form-section').classList.remove('hidden');
+            document.getElementById('output-section').classList.add('hidden');
+            resetForm();
+        }
+
+        window.onload = function () {
+            renderTable('masuk');
+            renderTable('keluar');
+        };
+    </script>
+</body>
+</html>
